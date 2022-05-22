@@ -17,6 +17,12 @@ class SqliteDatabase(object):
             "symbol TEXT NOT NULL,"
             "interval TEXT NOT NULL,"
             "provider TEXT NOT NULL REFERENCES providers(name),"
+            "open REAL NOT NULL,"
+            "high REAL NOT NULL,"
+            "low REAL NOT NULL,"
+            "close REAL NOT NULL,"
+            "volume REAL NOT NULL,"
+            "quote_volume REAL,"
             "data JSON NOT NULL,"
             "PRIMARY KEY (timestamp, symbol, interval, provider))"
         )
@@ -39,16 +45,25 @@ class SqliteDatabase(object):
         )
         self.connection.commit()
 
-    def add_candlestick(self, provider, symbol, interval, timestamp, data):
+    def add_candlestick(
+        self, provider, symbol, interval, timestamp, o, h, l, c, v, qv, data
+    ):
         c = self.connection.cursor()
         c.execute(
             "INSERT OR REPLACE INTO candlesticks VALUES "
-            "(:timestamp, :symbol, :interval, :provider, :data)",
+            "(:timestamp, :symbol, :interval, :provider, "
+            ":open, :high, :low, :close, :volume, :quote_volume, :data)",
             {
                 "timestamp": timestamp,
                 "symbol": symbol,
                 "interval": interval,
                 "provider": provider,
+                "open": o,
+                "high": h,
+                "low": l,
+                "close": c,
+                "volume": v,
+                "quote_volume": qv,
                 "data": json.dumps(data),
             },
         )
@@ -61,14 +76,21 @@ class SqliteDatabase(object):
                 "symbol": symbol,
                 "interval": interval,
                 "provider": provider,
+                "open": o,
+                "high": h,
+                "low": l,
+                "close": c,
+                "volume": v,
+                "quote_volume": qv,
                 "data": json.dumps(data),
             }
-            for (timestamp, data) in timestamped_data.items()
+            for timestamp, (o, h, l, c, v, qv, data) in timestamped_data.items()
         ]
         c = self.connection.cursor()
         c.executemany(
             "INSERT OR REPLACE INTO candlesticks VALUES "
-            "(:timestamp, :symbol, :interval, :provider, :data)",
+            "(:timestamp, :symbol, :interval, :provider, "
+            ":open, :high, :low, :close, :volume, :quote_volume, :data)",
             values,
         )
         self.connection.commit()

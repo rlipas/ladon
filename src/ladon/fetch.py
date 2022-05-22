@@ -24,21 +24,23 @@ async def fetch(provider_name, interval="1d", symbols=None):
     async def fetch_until_end(symbol):
         symbol["klines"] = []
 
-        last_kline = db.get_candlestick(provider_name, symbol["pair"], interval)
+        last_kline = db.get_candlestick(provider_name, symbol["symbol"], interval)
         if last_kline is not None:
             start_time = last_kline[0] // 1000
-        else:
+        elif "onboardDate" in symbol:
             start_time = symbol["onboardDate"] // 1000
+        else:
+            start_time = 1483228800  # 2017
 
         logger.info(
-            f"Fetching {symbol['pair']} {symbol['contractType']}, starting@{start_time}..."
+            f"Fetching {symbol['symbol']}, starting@{start_time}..."
         )
         new_klines = await provider.continuousKlines(
-            symbol["pair"],
-            symbol["contractType"],
+            symbol["symbol"],
+            None, #symbol["contractType"],
             interval=interval,
             start_time=start_time,
-            limit=1500,
+            limit=1000,
             fetch_all=True,
         )
 
@@ -46,7 +48,7 @@ async def fetch(provider_name, interval="1d", symbols=None):
             provider_name,
             symbol["symbol"],
             interval,
-            {k[0] // 1000: k for k in new_klines},
+            {k[0] // 1000: (k[1], k[2], k[3], k[4], k[5], k[7], k) for k in new_klines},
         )
 
         return True

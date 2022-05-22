@@ -59,18 +59,15 @@ def shift(arr, num, fill_value=np.nan):
     return result
 
 
-def backtest(provider_name, period, strategy_name, symbols=None):
-    strategy = import_module(f"ladon.strategies.{strategy_name}")
+def load_candlesticks(provider_name, period, symbols=None):
     db = SqliteDatabase()
     candlesticks = load_all(db, provider_name, period, symbols)
     if len(candlesticks) == 0:
-        print(f"No data found for {' '.join(symbols)}")
-        return
+        raise Exception(f"No data found for {' '.join(symbols)}")
+    return candlesticks
 
-    window = max(len(candle) for candle in candlesticks)
 
-    weights = strategy.step(candlesticks, window=window)
-
+def calc_returns(candlesticks, weights, window):
     symbols_returns = returns(candlesticks, window)
     strategy_returns = np.nansum(symbols_returns * shift(weights, 1, 0), axis=0)[1:]
     cumulative_returns = np.cumprod(1 + strategy_returns) - 1
@@ -78,6 +75,20 @@ def backtest(provider_name, period, strategy_name, symbols=None):
         np.max(1 + cumulative_returns[: i + 1])
         for i in range(cumulative_returns.shape[0])
     ]
+    return strategy_returns, cumulative_returns, drawdown
+
+
+def backtest(provider_name, period, strategy_name, symbols=None):
+    strategy = import_module(f"ladon.strategies.{strategy_name}")
+    candlesticks = load_candlesticks(provider_name, period, symbols)
+
+    window = max(len(candle) for candle in candlesticks)
+
+    weights = strategy.step(candlesticks, window=window)
+
+    strategy_returns, cumulative_returns, drawdown = calc_returns(
+        candlesticks, weights, window
+    )
 
     print(f"Cumulative returns: {cumulative_returns[-1]}")
     print(f"Sharpe ratio: {np.average(strategy_returns) / np.std(strategy_returns)}")

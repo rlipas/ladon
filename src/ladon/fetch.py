@@ -1,9 +1,6 @@
 import asyncio
-import bz2
 import logging
 from importlib import import_module
-
-import ujson
 
 from ladon.database import SqliteDatabase
 
@@ -27,7 +24,7 @@ async def fetch(provider_name, interval="1d", symbols=None):
     async def fetch_until_end(symbol):
         symbol["klines"] = []
 
-        last_kline = db.get_candlestick(provider_name, symbol['pair'], interval)
+        last_kline = db.get_candlestick(provider_name, symbol["pair"], interval)
         if last_kline is not None:
             start_time = last_kline[0] // 1000
         else:
@@ -51,7 +48,7 @@ async def fetch(provider_name, interval="1d", symbols=None):
             interval,
             {k[0] // 1000: k for k in new_klines},
         )
- 
+
         return True
 
     await asyncio.gather(*map(fetch_until_end, info["symbols"]))

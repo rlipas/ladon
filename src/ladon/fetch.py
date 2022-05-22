@@ -47,16 +47,11 @@ async def fetch(provider_name, interval="1d", symbols=None):
 
         db.add_candlesticks(
             provider_name,
-            symbol["pair"],
+            symbol["symbol"],
             interval,
             {k[0] // 1000: k for k in new_klines},
         )
  
-        symbol["klines"] += new_klines
-
-        if len(symbol["klines"]) == 0:
-            del symbol["klines"]
-
         return True
 
     await asyncio.gather(*map(fetch_until_end, info["symbols"]))

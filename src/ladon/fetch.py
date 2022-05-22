@@ -5,6 +5,8 @@ from importlib import import_module
 
 import ujson
 
+from ladon.database import SqliteDatabase
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +27,10 @@ async def fetch(provider_name, interval="1d", symbols=None):
     except FileNotFoundError:
         pass
 
+    db = SqliteDatabase()
+
     info = await provider.exchange_info()
+    db.set_provider_info(provider_name, info)
 
     if symbols is not None:
         logger.info(f"Filtering symbols {symbols}")
@@ -50,6 +55,13 @@ async def fetch(provider_name, interval="1d", symbols=None):
             start_time=start_time,
             limit=1500,
             fetch_all=True,
+        )
+
+        db.add_candlesticks(
+            provider_name,
+            symbol["pair"],
+            interval,
+            {k[0] // 1000: k for k in symbol["klines"]},
         )
 
         if len(symbol["klines"]) == 0:

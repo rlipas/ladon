@@ -1,4 +1,4 @@
-# Simple MA Cross strategy
+# Simple Buy and Hold strategy
 import numpy as np
 
 

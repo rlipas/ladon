@@ -1,4 +1,4 @@
-# Simple MA Cross strategy
+# Simple Cross sectional mean return strategy
 import numpy as np
 
 

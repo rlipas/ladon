@@ -64,7 +64,9 @@ class RateLimitedAsyncClient(httpx.AsyncClient):
             if rate_limit_wait == 0:
                 break
             else:
-                logger.warning(f"Rate limit almost reached, waiting {int(rate_limit_wait)}s...")
+                logger.warning(
+                    f"Rate limit almost reached, waiting {int(rate_limit_wait)}s..."
+                )
                 await asyncio.sleep(rate_limit_wait)
 
         response = await super().get(*args, **kwargs)
@@ -88,8 +90,10 @@ class RateLimitedAsyncClient(httpx.AsyncClient):
 
 client = RateLimitedAsyncClient(timeout=None)
 
+
 async def close():
     await client.aclose()
+
 
 async def exchange_info():
     global client

@@ -2,8 +2,8 @@ import argparse
 import asyncio
 import logging
 
-from .fetch import fetch
 from .backtest import backtest
+from .fetch import fetch
 
 
 def main():

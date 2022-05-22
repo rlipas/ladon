@@ -63,6 +63,10 @@ def backtest(provider_name, period, strategy_name, symbols=None):
     strategy = import_module(f"ladon.strategies.{strategy_name}")
     db = SqliteDatabase()
     candlesticks = load_all(db, provider_name, period, symbols)
+    if len(candlesticks) == 0:
+        print(f"No data found for {' '.join(symbols)}")
+        return
+
     window = max(len(candle) for candle in candlesticks)
 
     weights = strategy.step(candlesticks, window=window)

@@ -2,8 +2,9 @@
 import numpy as np
 
 
-def step(candlesticks, fast_length=20, slow_length=200):
-    window = max(len(candle) for candle in candlesticks)
+def step(candlesticks, fast_length=20, slow_length=200, window=None):
+    if window is None:
+        window = max(len(candle) for candle in candlesticks)
     ma_fast = np.array(
         [
             np.convolve(

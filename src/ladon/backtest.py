@@ -65,12 +65,21 @@ def backtest(provider_name, period, strategy_name, symbols=None):
     candlesticks = load_all(db, provider_name, period, symbols)
     window = max(len(candle) for candle in candlesticks)
 
-    weights = strategy.step(candlesticks)
+    weights = strategy.step(candlesticks, window=window)
 
     symbols_returns = returns(candlesticks, window)
     strategy_returns = np.nansum(symbols_returns * shift(weights, 1, 0), axis=0)[1:]
+    cumulative_returns = np.cumprod(1 + strategy_returns) - 1
+    drawdown = 1 - (1 + cumulative_returns) / [
+        np.max(1 + cumulative_returns[: i + 1])
+        for i in range(cumulative_returns.shape[0])
+    ]
 
-    plt.plot(np.cumprod(1 + strategy_returns) - 1)
+    print(f"Cumulative returns: {cumulative_returns[-1]}")
+    print(f"Sharpe ratio: {np.average(strategy_returns) / np.std(strategy_returns)}")
+    print(f"Ideal leverage: {np.average(strategy_returns) / np.var(strategy_returns)}")
+    print(f"Max drawdown: {np.max(drawdown)}")
+
+    plt.plot(cumulative_returns)
+    plt.plot(drawdown)
     plt.show()
-
-    print(f"Cumulative returns: {np.nanprod(1+strategy_returns)-1}")

@@ -2,5 +2,5 @@
 import numpy as np
 
 
-def step(candlesticks):
+def step(candlesticks, **kwargs):
     return np.ones((len(candlesticks), len(candlesticks[0]))) / len(candlesticks)

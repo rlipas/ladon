@@ -131,7 +131,7 @@ class Candlestick(object):
 
     def __iter__(self):
         if self.sampling is None:
-            return (self.data[t] for t in self.sorted_times)
+            yield from (self.data[t] for t in self.sorted_times)
         else:
             initial_time = int(self.sorted_times[0] // self.sampling) * self.sampling
             next_time = initial_time + self.sampling

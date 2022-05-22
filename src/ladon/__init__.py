@@ -3,6 +3,7 @@ import asyncio
 import logging
 
 from .fetch import fetch
+from .backtest import backtest
 
 
 def main():
@@ -41,6 +42,7 @@ def main():
     parser_backtest = subparsers.add_parser(
         "backtest", help="Backtest strategy using historical data"
     )
+    parser_backtest.add_argument("-d", "--data", help="data file to use", required=True)
     parser_backtest.add_argument(
         "-s", "--strategy", help="strategy to use", required=True
     )
@@ -89,7 +91,10 @@ def fetch_main(args):
 
 
 def backtest_main(args):
-    raise NotImplementedError("Backtesting not implemented yet!")
+    data_file = args.data
+    strategy = args.strategy
+
+    backtest(data_file, strategy)
 
 
 def forwardtest_main(args):

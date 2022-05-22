@@ -1,14 +1,18 @@
 import asyncio
 import bz2
+import logging
+from importlib import import_module
 
 import ujson
 
-from .providers.binance_futures import continuousKlines, exchange_info
+logger = logging.getLogger(__name__)
 
 
-async def fetch(interval, symbols):
+async def fetch(provider_name, interval="1d", symbols=None):
+    provider = import_module(f"ladon.providers.{provider_name}")
+
     filename = (
-        f"binance_futures_{interval}{'_'+'_'.join(symbols) if symbols else ''}.json.bz2"
+        f"{provider_name}_{interval}{'_'+'_'.join(symbols) if symbols else ''}.json.bz2"
     )
 
     old_klines = {}
@@ -21,12 +25,15 @@ async def fetch(interval, symbols):
     except FileNotFoundError:
         pass
 
-    info = await exchange_info()
+    info = await provider.exchange_info()
+
+    if symbols is not None:
+        logger.info(f"Filtering symbols {symbols}")
+        info["symbols"] = list(
+            filter(lambda s: s["symbol"] in symbols, info["symbols"])
+        )
 
     async def fetch_until_end(symbol):
-        if len(symbols) > 0 and symbol["symbol"] not in symbols:
-            return False
-
         symbol["klines"] = []
 
         if symbol["pair"] in old_klines:
@@ -35,7 +42,8 @@ async def fetch(interval, symbols):
         else:
             start_time = symbol["onboardDate"] // 1000
 
-        symbol["klines"] += await continuousKlines(
+        logger.info(f"Fetching {symbol['pair']} {symbol['contractType']}...")
+        symbol["klines"] += await provider.continuousKlines(
             symbol["pair"],
             symbol["contractType"],
             interval=interval,
@@ -52,4 +60,5 @@ async def fetch(interval, symbols):
     await asyncio.gather(*map(fetch_until_end, info["symbols"]))
 
     with bz2.open(filename, mode="w") as f:
+        logger.info(f"Writing {filename}...")
         f.write(ujson.dumps(info).encode())

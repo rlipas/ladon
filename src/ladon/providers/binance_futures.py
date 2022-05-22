@@ -1,25 +1,12 @@
-import sys
+import logging
 
 import httpx
 
-BASE_URL = "https://fapi.binance.com"
+from ladon.base import INTERVALS_MAP
 
-interval_map = {
-    "1m": 60,
-    "3m": 3 * 60,
-    "5m": 5 * 60,
-    "15m": 15 * 60,
-    "30m": 30 * 60,
-    "1h": 60 * 60,
-    "2h": 2 * 60 * 60,
-    "4h": 4 * 60 * 60,
-    "6h": 6 * 60 * 60,
-    "8h": 8 * 60 * 60,
-    "12h": 12 * 60 * 60,
-    "1d": 24 * 60 * 60,
-    "3d": 3 * 24 * 60 * 60,
-    "1w": 7 * 24 * 60 * 60,
-}
+logger = logging.getLogger(__name__)
+
+BASE_URL = "https://fapi.binance.com"
 
 
 async def exchange_info():
@@ -38,17 +25,16 @@ async def continuousKlines(
     limit=None,
     fetch_all=False,
 ):
-    if interval not in interval_map:
-        print(f"Interval '{interval}' not valid ({', '.join(interval_map.keys())})")
-        sys.exit(1)
+    if interval not in INTERVALS_MAP:
+        raise ValueError(
+            f"Interval '{interval}' not valid ({', '.join(INTERVALS_MAP.keys())})"
+        )
 
-    interval_seconds = interval_map[interval]
+    interval_seconds = INTERVALS_MAP[interval]
     klines = []
 
     while True:
-        print(
-            f"{pair}: {len(klines)}    ", file=sys.stderr, end="\r",
-        )
+        logger.debug(f"{pair} klines: {len(klines)}")
         params = {
             "pair": pair,
             "contractType": contract,

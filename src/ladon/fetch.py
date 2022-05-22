@@ -62,3 +62,5 @@ async def fetch(provider_name, interval="1d", symbols=None):
     with bz2.open(filename, mode="w") as f:
         logger.info(f"Writing {filename}...")
         f.write(ujson.dumps(info).encode())
+
+    await provider.close()

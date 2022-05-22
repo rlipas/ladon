@@ -1,11 +1,11 @@
-import bz2
 import logging
 from importlib import import_module
 
+import matplotlib.pyplot as plt
 import numpy as np
-import ujson
 
 from ladon.base import Candlestick
+from ladon.database import SqliteDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +26,16 @@ def load(symbol, data):
     return candlestick
 
 
-def load_all(filename):
+def load_all(database, provider_name, period, symbols=None):
     candlesticks = []
-    with bz2.open(filename, mode="r") as f:
-        info = ujson.load(f)
-        for symbol in info["symbols"]:
-            if "klines" in symbol:
-                logger.debug(f'{symbol["symbol"]} {len(symbol["klines"])}')
-                candlesticks.append(load(symbol["symbol"], symbol["klines"]))
+
+    info = database.get_provider_info(provider_name)
+    for symbol in info["symbols"]:
+        if symbols is None or symbol["symbol"] in symbols:
+            candles = database.get_candlesticks(provider_name, symbol["symbol"], period)
+            if len(candles) > 0:
+                candlesticks.append(load(symbol["symbol"], candles))
+
     return candlesticks
 
 
@@ -57,14 +59,18 @@ def shift(arr, num, fill_value=np.nan):
     return result
 
 
-def backtest(data_file, strategy_name):
+def backtest(provider_name, period, strategy_name, symbols=None):
     strategy = import_module(f"ladon.strategies.{strategy_name}")
-    candlesticks = load_all(data_file)
+    db = SqliteDatabase()
+    candlesticks = load_all(db, provider_name, period, symbols)
     window = max(len(candle) for candle in candlesticks)
 
     weights = strategy.step(candlesticks)
 
     symbols_returns = returns(candlesticks, window)
-    strategy_returns = np.sum(symbols_returns * shift(weights, 1, 0), axis=0)[1:]
+    strategy_returns = np.nansum(symbols_returns * shift(weights, 1, 0), axis=0)[1:]
 
-    print(f"Cumulative returns: {np.sum(strategy_returns)}")
+    plt.plot(np.cumprod(1 + strategy_returns) - 1)
+    plt.show()
+
+    print(f"Cumulative returns: {np.nanprod(1+strategy_returns)-1}")

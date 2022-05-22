@@ -42,9 +42,18 @@ def main():
     parser_backtest = subparsers.add_parser(
         "backtest", help="Backtest strategy using historical data"
     )
-    parser_backtest.add_argument("-d", "--data", help="data file to use", required=True)
+    parser_backtest.add_argument("-p", "--provider", help="Exchange provider name", required=True)
     parser_backtest.add_argument(
-        "-s", "--strategy", help="strategy to use", required=True
+        "-i",
+        "--interval",
+        help="candlesticks interval (default: %(default)s)",
+        default="1d",
+    )
+    parser_backtest.add_argument(
+        "-t", "--strategy", help="strategy to use", required=True
+    )
+    parser_backtest.add_argument(
+        "-s", "--symbols", help="symbols to include (default: all)", nargs="*"
     )
     parser_backtest.set_defaults(func=backtest_main)
 
@@ -91,10 +100,12 @@ def fetch_main(args):
 
 
 def backtest_main(args):
-    data_file = args.data
+    provider = args.provider
+    interval = args.interval
     strategy = args.strategy
+    symbols = list(map(str.upper, args.symbols)) if args.symbols else None
 
-    backtest(data_file, strategy)
+    backtest(provider, interval, strategy, symbols)
 
 
 def forwardtest_main(args):

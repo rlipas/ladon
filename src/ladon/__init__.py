@@ -9,7 +9,13 @@ def main():
     parser = argparse.ArgumentParser(
         description="Ladon is a framework for backtesting and running algorithmic trading bots."
     )
-    parser.add_argument("-v", "--verbose", action="count", default=0)
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="verbose output (multiple for even more verbose)",
+    )
 
     subparsers = parser.add_subparsers(title="subcommands")
 
@@ -40,10 +46,23 @@ def main():
     )
     parser_backtest.set_defaults(func=backtest_main)
 
+    # Forward test subcommand
+    parser_forwardtest = subparsers.add_parser(
+        "forwardtest", help="Forward test strategy using data provider"
+    )
+    parser_forwardtest.add_argument(
+        "-s", "--strategy", help="strategy to use", required=True
+    )
+    parser_forwardtest.add_argument(
+        "-p", "--provider", help="Exchange provider name", required=True
+    )
+    parser_forwardtest.set_defaults(func=forwardtest_main)
+
     # Trade subcommand
     parser_trade = subparsers.add_parser(
         "trade", help="Run strategy live on a exchange"
     )
+    parser_trade.add_argument("-s", "--strategy", help="strategy to use", required=True)
     parser_trade.add_argument(
         "-p", "--provider", help="Exchange provider name", required=True
     )
@@ -55,7 +74,10 @@ def main():
             min(3, args.verbose)
         ]
     )
-    args.func(args)
+    if "func" in args:
+        args.func(args)
+    else:
+        parser.print_usage()
 
 
 def fetch_main(args):
@@ -67,6 +89,10 @@ def fetch_main(args):
 
 
 def backtest_main(args):
+    raise NotImplementedError("Backtesting not implemented yet!")
+
+
+def forwardtest_main(args):
     raise NotImplementedError("Backtesting not implemented yet!")
 
 

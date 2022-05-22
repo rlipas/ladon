@@ -17,4 +17,9 @@ def step(candlesticks, window=None):
     index_rets = np.nanmean(all_rets, axis=0)
     weights = index_rets - all_rets
 
+    total_sum = np.nansum(np.abs(weights), axis=0)
+    weights = np.divide(
+        weights, total_sum, out=np.zeros_like(weights), where=total_sum != 0
+    )
+
     return weights

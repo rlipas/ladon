@@ -47,11 +47,10 @@ class RateLimitedAsyncClient(httpx.AsyncClient):
                             datetime.now().timestamp() // period
                         )
 
-                    limit["current_count"] += weight
                     logger.debug(f"{args} {self.rate_limits}")
 
                     if (
-                        limit["current_count"]
+                        limit["current_count"] + weight
                         >= RateLimitedAsyncClient.RATE_LIMIT_THRESHOLD
                         * limit["total_weight"]
                     ):
@@ -59,9 +58,13 @@ class RateLimitedAsyncClient(httpx.AsyncClient):
                             rate_limit_wait,
                             period - datetime.now().timestamp() % period,
                         )
+                    else:
+                        limit["current_count"] += weight
+
             if rate_limit_wait == 0:
                 break
             else:
+                logger.warning(f"Rate limit almost reached, waiting {int(rate_limit_wait)}s...")
                 await asyncio.sleep(rate_limit_wait)
 
         response = await super().get(*args, **kwargs)

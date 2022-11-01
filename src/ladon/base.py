@@ -1,3 +1,8 @@
+from copy import copy
+from collections.abc import Iterator
+from decimal import Decimal
+from dataclasses import dataclass, replace
+
 import numpy as np
 
 INTERVALS_MAP = {
@@ -18,7 +23,124 @@ INTERVALS_MAP = {
 }
 
 
-class Candlestick(object):
+@dataclass
+class Trade:
+    timestamp: int
+    price: Decimal
+    quantity: Decimal
+    taker_buy: bool
+
+
+@dataclass
+class Candlestick:
+    timestamp: int
+    open: Decimal
+    low: Decimal
+    high: Decimal
+    close: Decimal
+    volume: Decimal
+    buy_volume: Decimal
+
+
+def trades_to_candlesticks_stream(
+    trades: Iterator[Trade], period
+) -> Iterator[Candlestick]:
+    current_candlestick = None
+    for trade in trades:
+        new_candle_time = period * (trade.timestamp // period)
+
+        if current_candlestick is not None:
+            if current_candlestick.timestamp < new_candle_time:
+                last_price = current_candlestick.close
+                current_candlestick = Candlestick(
+                    current_candlestick.timestamp + period,
+                    last_price,
+                    last_price,
+                    last_price,
+                    last_price,
+                    Decimal(0),
+                    Decimal(0),
+                )
+                while current_candlestick.timestamp < new_candle_time:
+                    yield copy(current_candlestick)
+                    current_candlestick = replace(
+                        current_candlestick,
+                        timestamp=current_candlestick.timestamp + period,
+                    )
+                current_candlestick = None
+
+        if current_candlestick is not None:
+            assert new_candle_time == current_candlestick.timestamp
+            current_candlestick.low = min(current_candlestick.low, trade.price)
+            current_candlestick.high = max(current_candlestick.high, trade.price)
+            current_candlestick.close = trade.price
+            current_candlestick.volume += trade.quantity
+            current_candlestick.buy_volume += trade.quantity if trade.taker_buy else 0
+        else:  # current_candlestick is None:
+            current_candlestick = Candlestick(
+                new_candle_time,
+                trade.price,
+                trade.price,
+                trade.price,
+                trade.price,
+                trade.quantity,
+                trade.quantity if trade.taker_buy else 0,
+            )
+
+        yield copy(current_candlestick)
+
+
+def trades_to_candlesticks(trades: [Trade], period) -> [Candlestick]:
+    current_candlestick = None
+    # TODO: Use stream implementatino
+    candles = []
+    for trade in trades:
+        new_candle_time = period * (trade.timestamp // period)
+
+        if current_candlestick is not None:
+            if current_candlestick.timestamp < new_candle_time:
+                candles.append(current_candlestick)
+                last_price = current_candlestick.close
+                current_candlestick = Candlestick(
+                    current_candlestick.timestamp + period,
+                    last_price,
+                    last_price,
+                    last_price,
+                    last_price,
+                    Decimal(0),
+                    Decimal(0),
+                )
+                while current_candlestick.timestamp < new_candle_time:
+                    candles.append(current_candlestick)
+                    current_candlestick = replace(
+                        current_candlestick,
+                        timestamp=current_candlestick.timestamp + period,
+                    )
+                current_candlestick = None
+
+        if current_candlestick is not None:
+            assert new_candle_time == current_candlestick.timestamp
+            current_candlestick.low = min(current_candlestick.low, trade.price)
+            current_candlestick.high = max(current_candlestick.high, trade.price)
+            current_candlestick.close = trade.price
+            current_candlestick.volume += trade.quantity
+            current_candlestick.buy_volume += trade.quantity if trade.taker_buy else 0
+        else:  # current_candlestick is None:
+            current_candlestick = Candlestick(
+                new_candle_time,
+                trade.price,
+                trade.price,
+                trade.price,
+                trade.price,
+                trade.quantity,
+                trade.quantity if trade.taker_buy else 0,
+            )
+
+    candles.append(current_candlestick)
+    return candles
+
+
+class Candlesticks(object):
     def __init__(self, symbol, sampling=None, max_history=None, init=None):
         self.symbol = symbol
         self.sampling = sampling

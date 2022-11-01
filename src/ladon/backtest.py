@@ -4,14 +4,14 @@ from importlib import import_module
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ladon.base import Candlestick
+from ladon.base import Candlesticks
 from ladon.database import SqliteDatabase
 
 logger = logging.getLogger(__name__)
 
 
 def load(symbol, data):
-    candlestick = Candlestick(symbol)
+    candlestick = Candlesticks(symbol)
     for line in data:
         candlestick.append_candlestick(
             {
